@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import './style.css';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-// import fragmentShader from './shaders/fragment.glsl';
-// import vertexShader from './shaders/vertex.glsl';
+// @ts-ignore
+import fragmentShader from './shaders/fragment.glsl';
+// @ts-ignore
+import vertexShader from './shaders/vertex.glsl';
 
 export default class Sketch {
     constructor(options) {
@@ -53,16 +55,8 @@ export default class Sketch {
         // this.material = new THREE.MeshNormalMaterial();
 
         this.material = new THREE.ShaderMaterial({
-            fragmentShader: `
-                    void main() {
-                        gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
-                    }
-                `,
-            vertexShader: `
-                    void main() {
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
+            fragmentShader: fragmentShader,
+            vertexShader: vertexShader,
         });
 
         this.mesh = new THREE.Mesh(this.geometry, this.material);
