@@ -51,12 +51,17 @@ export default class Sketch {
         this.camera.updateProjectionMatrix();
     }
     addObject() {
-        this.geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        // this.geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         // this.material = new THREE.MeshNormalMaterial();
-
+        this.geometry = new THREE.PlaneGeometry(4, 4, 150, 150);
         this.material = new THREE.ShaderMaterial({
             fragmentShader: fragmentShader,
             vertexShader: vertexShader,
+            side: THREE.DoubleSide,
+            // wireframe: true,
+            uniforms: {
+                time: { value: 0 },
+            },
         });
 
         this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -66,10 +71,10 @@ export default class Sketch {
     render() {
         this.time += 0.05;
         // console.log(this.time)
+
         // @ts-ignore
-        this.mesh.rotation.x = this.time / 20;
-        // @ts-ignore
-        this.mesh.rotation.y = this.time / 10;
+        this.material.uniforms.time.value = this.time;
+
 
         this.renderer.render(this.scene, this.camera);
         window.requestAnimationFrame(this.render.bind(this));
