@@ -31,9 +31,6 @@ export default class Sketch {
             this.renderer.domElement
         );
 
-        // enable damping
-        this.controls.enableDamping = true;
-
         this.resize();
         this.setupResize();
         this.addObject();
@@ -51,9 +48,7 @@ export default class Sketch {
         this.camera.updateProjectionMatrix();
     }
     addObject() {
-        // this.geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-        // this.material = new THREE.MeshNormalMaterial();
-        this.geometry = new THREE.PlaneGeometry(4, 4, 150, 150);
+        this.geometry = new THREE.PlaneGeometry(0.5, 0.5, 20, 20);
         this.material = new THREE.ShaderMaterial({
             fragmentShader: fragmentShader,
             vertexShader: vertexShader,
@@ -70,8 +65,6 @@ export default class Sketch {
 
     render() {
         this.time += 0.05;
-        // console.log(this.time)
-
         // @ts-ignore
         this.material.uniforms.time.value = this.time;
 
