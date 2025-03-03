@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 // import './style.css';
+// @ts-ignore
 import { DigitalGlitch, OrbitControls } from 'three/examples/jsm/Addons.js';
 // @ts-ignore
 import fragmentShader from './shaders/fragment.glsl';
@@ -8,6 +9,7 @@ import vertexShader from './shaders/vertex.glsl';
 import FontFaceObserver from 'fontfaceobserver';
 import imagesLoaded from 'imagesloaded';
 import Scroll from './scroll';
+import gsap from 'gsap';
 
 export default class Sketch {
     constructor(options) {
@@ -59,6 +61,7 @@ export default class Sketch {
                 .then(() => resolve());
         });
 
+        // @ts-ignore
         const preloadImages = new Promise((resolve, reject) => {
             imagesLoaded(
                 document.querySelectorAll('img'),
@@ -70,36 +73,97 @@ export default class Sketch {
         const allDone = [fontOpen, fontPlayfair, preloadImages];
         this.currentScroll = 0;
 
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
 
         Promise.all(allDone).then(() => {
             this.scroll = new Scroll();
             this.addImages();
             this.resize();
             this.setPositions();
+
+            this.onPointerMove();
             this.setupResize();
             this.addObject();
             this.render();
+            // @ts-ignore
             window.addEventListener('scroll', (t) => {
                 this.currentScroll = window.scrollY;
                 this.setPositions();
             });
         });
     }
+    onPointerMove() {
+        window.addEventListener('mousemove', (event) => {
+            // calculate pointer position in normalized device coordinates
+            // (-1 to +1) for both components
+
+            this.mouse.x = (event.clientX / this.width) * 2 - 1;
+            this.mouse.y = -(event.clientY / this.height) * 2 + 1;
+
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const intersects = this.raycaster.intersectObjects(
+                this.scene.children
+            );
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                // @ts-ignore
+                obj.material.uniforms.uHover.value = intersects[0].uv;
+            }
+        });
+    }
+    // this.intersects = 0;
     addImages() {
+        this.material = new THREE.ShaderMaterial({
+            fragmentShader: fragmentShader,
+            vertexShader: vertexShader,
+            // side: THREE.DoubleSide,
+            // wireframe: true,
+            uniforms: {
+                time: { value: 0 },
+                uImage: { value: 0 },
+                uHover: { value: new THREE.Vector2(0.5, 0.5) },
+                uHoverState: { value: 0 },
+            },
+        });
+        this.materials = [];
         this.imageStore = this.images.map((img) => {
             let bounds = img.getBoundingClientRect();
             let geometry = new THREE.PlaneGeometry(
                 bounds.width,
                 bounds.height,
-                1,
-                1
+                100,
+                100
             );
             let texture = new THREE.Texture(img);
             texture.needsUpdate = true;
-            let material = new THREE.MeshBasicMaterial({
-                // color: 0xff0000,
-                map: texture,
+            let material = this.material?.clone();
+
+            // @ts-ignore
+            img.addEventListener('mouseenter', (event) => {
+                // @ts-ignore
+                gsap.to(material?.uniforms.uHoverState, {
+                    duration: 1,
+                    value: 1,
+                });
             });
+            // @ts-ignore
+            img.addEventListener('mouseleave', (event) => {
+                // @ts-ignore
+                gsap.to(material?.uniforms.uHoverState, {
+                    duration: 1,
+                    value: 0,
+                });
+            });
+
+            this.materials?.push(material);
+
+            if (material) {
+                material.uniforms.uImage.value = texture;
+            }
+
             let mesh = new THREE.Mesh(geometry, material);
 
             this.scene.add(mesh);
@@ -123,8 +187,8 @@ export default class Sketch {
             mesh.geometry = new THREE.PlaneGeometry(
                 bounds.width,
                 bounds.height,
-                1,
-                1
+                100,
+                100
             );
 
             return {
@@ -156,7 +220,6 @@ export default class Sketch {
         this.camera.updateProjectionMatrix();
         this.updateImageStore(); // Update image store with new positions and dimensions
         this.setPositions(); // Update positions after resizing
-        console.log('resize');
     }
     addObject() {
         this.geometry = new THREE.PlaneGeometry(200, 400, 10, 10);
@@ -167,6 +230,9 @@ export default class Sketch {
             // wireframe: true,
             uniforms: {
                 time: { value: 0 },
+                uImage: { value: 0 },
+                uHover: { value: new THREE.Vector2(0.5, 0.5) },
+                uHoverState: { value: 0 },
             },
         });
 
@@ -181,6 +247,10 @@ export default class Sketch {
         this.time += 0.05;
         // @ts-ignore
         this.material.uniforms.time.value = this.time;
+
+        this.materials?.forEach((m) => {
+            m.uniforms.time.value = this.time;
+        });
 
         this.renderer.render(this.scene, this.camera);
         window.requestAnimationFrame(this.render.bind(this));
